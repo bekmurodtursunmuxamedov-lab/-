@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";
+export async function GET(){return NextResponse.json({ok:true,service:"printshop-ai-manager",integrations:{github:Boolean(process.env.GITHUB_TOKEN),vercel:Boolean(process.env.VERCEL_TOKEN),supabase:Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),ai:Boolean(process.env.AI_API_KEY)}})}
