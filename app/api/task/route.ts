@@ -43,7 +43,7 @@ export async function POST(req:Request){
   const mode=typeof body.mode==="string"?body.mode:"Inspect";
   if(!message)return NextResponse.json({error:"message is required"},{status:400});
   const confirmation=needsConfirmation(message,mode);
-  const inspection=await inspectProject().catch(error=>({error:error instanceof Error?error.message:"Inspection failed"}));
+  const inspection:any=await inspectProject().catch(error=>({error:error instanceof Error?error.message:"Inspection failed"}));
   const plan=[
     "1. Проверил текущее состояние PRINTSHOP через GitHub, Vercel, Supabase и production.",
     "2. Анализирую запрос без блокировки конструктора.",
