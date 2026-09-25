@@ -99,14 +99,14 @@ async function executeChange(message:string, mode:string, inspection:any){
   const branch=inspection.github.branch||"main";
   const files=await listProjectFiles(branch);
   const plan=await aiJson(
-    "You are the planning stage of a safe software engineering agent. Return ONLY JSON: {"summary":string,"files":string[],"tests":string[]}. Choose at most 8 existing source files from the supplied repository file list. Never choose secrets, .env files, generated build files, node_modules, or production infrastructure unless the user explicitly requested it. Constructor code is editable.",
+    `You are the planning stage of a safe software engineering agent. Return ONLY JSON: {"summary":string,"files":string[],"tests":string[]}. Choose at most 8 existing source files from the supplied repository file list. Never choose secrets, .env files, generated build files, node_modules, or production infrastructure unless the user explicitly requested it. Constructor code is editable.`,
     `User request: ${message}\nMode: ${mode}\nRepository files:\n${files.join("\n")}`
   ) as AiPlan;
   const selected=Array.isArray(plan.files)?plan.files.filter((p)=>files.includes(p)).slice(0,8):[];
   if(!selected.length)throw new Error("AI could not identify safe existing source files for this task");
   const source=await Promise.all(selected.map((path)=>getProjectFile(path,branch)));
   const change=await aiJson(
-    "You are the implementation stage of a safe software engineering agent. Return ONLY JSON: {"summary":string,"files":[{"path":string,"content":string,"reason":string}],"tests":string[],"risk":"low|medium|high"}. Return complete replacement contents for only the supplied files. Preserve unrelated behavior. Do not add secrets. Do not delete data. Do not modify production database schemas, auth, payments, orders, or deployment secrets. Constructor is allowed. Keep changes minimal.",
+    `You are the implementation stage of a safe software engineering agent. Return ONLY JSON: {"summary":string,"files":[{"path":string,"content":string,"reason":string}],"tests":string[],"risk":"low|medium|high"}. Return complete replacement contents for only the supplied files. Preserve unrelated behavior. Do not add secrets. Do not delete data. Do not modify production database schemas, auth, payments, orders, or deployment secrets. Constructor is allowed. Keep changes minimal.`,
     `User request: ${message}\nPlan: ${JSON.stringify(plan)}\nCurrent files:\n${source.map(x=>"--- "+x.path+" ---\n"+x.content).join("\n")}`
   ) as AiChange;
   validateChange(change);
