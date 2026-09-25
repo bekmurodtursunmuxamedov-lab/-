@@ -20,7 +20,7 @@ export const AGENTS: ManagedAgent[] = [
     status: "online",
     target: "bekmurodtursunmuxamedov-lab/print-style-uz",
     capabilities: ["Inspect", "Fix", "Improve", "Deploy"],
-    protectedAreas: ["constructor", "production DB", "auth", "payments", "orders"]
+    protectedAreas: ["production DB", "auth", "payments", "orders"]
   }
 ];
 
