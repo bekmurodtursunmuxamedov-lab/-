@@ -7,9 +7,9 @@ type Agent = { id:string; name:string; role:string; description:string; status:"
 const modes=["Inspect","Fix","Improve","Deploy"];
 
 export default function Home(){
- const [agents,setAgents]=useState<Agent[]>([]),[selectedId,setSelectedId]=useState("printshop-engineer"),[mode,setMode]=useState("Inspect"),[msg,setMsg]=useState(""),[messages,setMessages]=useState<string[]>([]),[busy,setBusy]=useState(false),[refreshing,setRefreshing]=useState(false);
+ const [agents,setAgents]=useState<Agent[]>([{id:"printshop-engineer",name:"PRINTSHOP Engineer",role:"AI Developer",description:"Управляет разработкой существующего PRINTSHOP через безопасный GitHub → CI → Vercel workflow.",status:"online",target:"bekmurodtursunmuxamedov-lab/print-style-uz",capabilities:["Inspect","Fix","Improve","Deploy"],protectedAreas:["constructor","production DB","auth","payments","orders"]}]),[selectedId,setSelectedId]=useState("printshop-engineer"),[mode,setMode]=useState("Inspect"),[msg,setMsg]=useState(""),[messages,setMessages]=useState<string[]>([]),[busy,setBusy]=useState(false),[refreshing,setRefreshing]=useState(false);
  const selected=useMemo(()=>agents.find(a=>a.id===selectedId)||agents[0],[agents,selectedId]);
- async function loadAgents(){setRefreshing(true);try{const r=await fetch("/api/agents",{cache:"no-store"});const d=await r.json();setAgents(d.agents||[]);}finally{setRefreshing(false);}}
+ async function loadAgents(){setRefreshing(true);try{const r=await fetch("/api/agents",{cache:"no-store"});if(r.ok){const d=await r.json();if(Array.isArray(d.agents)&&d.agents.length)setAgents(d.agents);}}catch{}finally{setRefreshing(false);}}
  useEffect(()=>{loadAgents()},[]);
  async function send(){if(!msg.trim()||busy||!selected)return;const text=msg.trim();setMsg("");setMessages(v=>[...v,"USER: "+text]);setBusy(true);try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({agentId:selected.id,mode,message:text})});const d=await r.json();setMessages(v=>[...v,"AI: "+(d.reply||d.error||"Ошибка")]);}catch{setMessages(v=>[...v,"AI: Не удалось связаться с сервером агента."])}finally{setBusy(false)}}
  return <main className="shell">
