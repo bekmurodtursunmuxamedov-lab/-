@@ -1,0 +1,1 @@
+export const PRINTSHOP_RULES={protectedPaths:["constructor","constructor-v1"],neverDelete:["users","products","orders","categories"],requireConfirmation:["production database","auth","payments","orders","production configuration"],neverExpose:["API keys","tokens","passwords","service-role keys"],workflow:["inspect","plan","change","validate","deploy"]} as const;
