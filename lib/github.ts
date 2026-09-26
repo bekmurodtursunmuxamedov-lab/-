@@ -96,3 +96,23 @@ export async function inspectPrintshop() {
 export function githubConfigured() {
   return Boolean(process.env.GITHUB_TOKEN);
 }
+
+
+export async function applyProjectChanges(branch: string, changes: Array<{path: string; content: string}>, message: string) {
+  if (!changes.length || changes.length > 8) throw new Error("Agent change set must contain 1-8 files");
+  for (const change of changes) {
+    if (!change.path || change.path.startsWith("/") || change.path.includes("..") || change.path.includes("\\") || change.path.startsWith(".git/") || change.path.includes("node_modules/")) throw new Error("Unsafe project file path");
+  }
+  const ref = await api(`/repos/${PRINTSHOP_TARGET.repository}/git/ref/heads/${encodeURIComponent(branch)}`);
+  const baseSha = ref.object.sha;
+  const baseCommit = await api(`/repos/${PRINTSHOP_TARGET.repository}/git/commits/${baseSha}`);
+  const elements = [];
+  for (const change of changes) {
+    const blob = await api(`/repos/${PRINTSHOP_TARGET.repository}/git/blobs`, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content:change.content,encoding:"utf-8"})});
+    elements.push({path:change.path,mode:"100644",type:"blob",sha:blob.sha});
+  }
+  const tree = await api(`/repos/${PRINTSHOP_TARGET.repository}/git/trees`, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({base_tree:baseCommit.tree.sha,tree:elements})});
+  const commit = await api(`/repos/${PRINTSHOP_TARGET.repository}/git/commits`, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,tree:tree.sha,parents:[baseSha]})});
+  await api(`/repos/${PRINTSHOP_TARGET.repository}/git/refs/heads/${encodeURIComponent(branch)}`, {method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({sha:commit.sha,force:false})});
+  return {branch,commitSha:commit.sha,files:changes.map(x=>x.path)};
+}
