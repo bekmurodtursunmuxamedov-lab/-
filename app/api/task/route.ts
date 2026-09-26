@@ -95,13 +95,28 @@ export async function POST(req:Request){
       const pr=await createProjectPullRequest(String(draft.title||"Agent Hub prepared change"),String(draft.body||"Prepared by Agent Hub. Review before merge."),branch,"main");
       return NextResponse.json({output:`Draft PR #${pr.number} подготовлен.\\nИзменённые файлы: ${changed.join(", ")}\\nMain не изменён.`,pullRequest:{number:pr.number,url:pr.html_url,branch},model,githubConfigured:true});
     }
-    const r=await client.chat.completions.create({
-      model,
-      messages:[
-        {role:"system",content:"Ты безопасный AI engineering manager для существующего PRINTSHOP. Не пересоздавай проект. Не трогай конструктор PRINTSHOP без явного запроса. Не меняй production database, auth, payments или orders без явного подтверждения. Сначала инспектируй GitHub. Для Inspect дай краткий фактологический отчёт. Для Fix/Improve дай план: цель, затронутые файлы, риски, проверки. Не утверждай, что что-то изменено, если изменения ещё не выполнены."},
-        {role:"user",content:`Режим: ${mode}\nЗадача: ${message}\nGitHub inspection: ${context}`}
-      ]
-    });
-    return NextResponse.json({output:r.choices[0]?.message?.content||"AI не вернул текст.",model,githubConfigured:true,inspection:true});
+    try{
+      const r=await client.chat.completions.create({
+        model,
+        messages:[
+          {role:"system",content:"Ты безопасный AI engineering manager для существующего PRINTSHOP. Не пересоздавай проект. Не трогай конструктор PRINTSHOP без явного запроса. Не меняй production database, auth, payments или orders без явного подтверждения. Сначала инспектируй GitHub. Для Inspect дай краткий фактологический отчёт. Для Fix/Improve дай план: цель, затронутые файлы, риски, проверки. Не утверждай, что что-то изменено, если изменения ещё не выполнены."},
+          {role:"user",content:`Режим: ${mode}\nЗадача: ${message}\nGitHub inspection: ${context}`}
+        ]
+      });
+      return NextResponse.json({output:r.choices[0]?.message?.content||"AI не вернул текст.",model,githubConfigured:true,inspection:true});
+    }catch(e){
+      const detail=e instanceof Error?e.message:"AI Gateway request failed.";
+      const blocked=/credit card|valid credit card|403|billing|unlock your free credits/i.test(detail);
+      return NextResponse.json({
+        output:blocked
+          ?"AI Gateway сейчас заблокирован Vercel из-за требования платёжной карты. Ничего не изменено. Переключись на Offline — он работает без AI Gateway и без оплаты."
+          :`AI Gateway недоступен: ${detail}. Ничего не изменено. Можно использовать Offline режим.`,
+        mode,
+        fallback:"Offline",
+        productionWrites:false,
+        constructorChanged:false,
+        githubConfigured:githubConfigured()
+      });
+    }
   }catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Agent task failed."},{status:500})}
 }
