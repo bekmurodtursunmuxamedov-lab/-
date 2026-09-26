@@ -2,6 +2,8 @@ import {NextResponse} from "next/server";
 import {getProjectFile,listProjectFiles} from "../../../../lib/github";
 
 const EXTENSIONS=[".ts",".tsx",".js",".jsx",".mjs",".cjs"];
+type Finding={path:string;line:number;message:string};
+
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 
@@ -9,7 +11,7 @@ export async function GET(){
   try{
     const paths=await listProjectFiles("main");
     const files=paths.filter((path)=>EXTENSIONS.some((ext)=>path.endsWith(ext))&&!path.includes(".env")&&!path.includes("supabase/migrations/")).slice(0,30);
-    const findings=[];
+    const findings:Finding[]=[];
     for(const path of files){
       const file=await getProjectFile(path,"main");
       const lines=file.content.split("\n");
