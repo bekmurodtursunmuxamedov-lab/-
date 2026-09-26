@@ -1,0 +1,15 @@
+name: Agent Hub heartbeat
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Agent Hub monitor
+        run: |
+          curl --fail --silent --show-error --max-time 20 \\
+            https://printshop-agent-hub.vercel.app/api/monitor
