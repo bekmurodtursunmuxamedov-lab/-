@@ -35,27 +35,39 @@ export async function POST(req:Request){
       catch(e){context=`GitHub inspection failed: ${e instanceof Error?e.message:"unknown error"}`;}
     }
     if(mode==="Offline"){
-      const protectedHit=protectedWords.filter(x=>message.toLowerCase().includes(x));
+      const lower=message.toLowerCase();
+      const protectedHit=protectedWords.filter(x=>lower.includes(x));
       const constructorRequested=/constructor|конструктор/i.test(message);
       const inspectionAvailable=!context.startsWith("GitHub inspection failed")&&context!=="GitHub inspection unavailable.";
+      let candidates:string[]=[];
+      if(inspectionAvailable){
+        try{
+          const parsed=JSON.parse(context);
+          const all=Array.isArray(parsed.files)?parsed.files.map((x:any)=>typeof x==="string"?x:String(x.path||"")):[];
+          const terms=lower.split(/[^a-zа-яё0-9]+/i).filter((x:string)=>x.length>2);
+          const scored=all.filter((p:string)=>safePath(p)&&!/constructor|конструктор/i.test(p)).map((p:string)=>({p,score:terms.reduce((n:number,t:string)=>n+(p.toLowerCase().includes(t)?1:0),0)})).filter((x:any)=>x.score>0).sort((a:any,b:any)=>b.score-a.score||a.p.localeCompare(b.p));
+          candidates=scored.slice(0,5).map((x:any)=>x.p);
+        }catch{}
+      }
       const lines=[
         "OFFLINE PLAN — без AI Gateway и без записи в production",
         "",
         `Задача: ${message}`,
         `GitHub inspection: ${inspectionAvailable?"получен":"недоступен"}`,
+        `Кандидаты файлов: ${candidates.length?candidates.join(", "):"не определены автоматически"}`,
         "",
         "План:",
-        "1. Проанализировать существующую структуру PRINTSHOP.",
-        "2. Определить минимальные файлы, связанные с задачей.",
-        "3. Проверить изменения на запрещённые пути и чувствительные области.",
-        "4. Выполнить только dry-run: ничего не менять и PR не создавать.",
+        "1. Использовать существующую структуру PRINTSHOP, не пересоздавая проект.",
+        "2. Сузить изменение до минимального набора существующих файлов.",
+        "3. Проверить запрещённые пути и чувствительные области перед любым изменением.",
+        "4. Offline режим выполняет только dry-run: ничего не меняет и PR не создаёт.",
         "",
         `Защищённые области: ${protectedHit.length?protectedHit.join(", "):"не обнаружены в тексте задачи"}.`,
         `Конструктор: ${constructorRequested?"запрос обнаружен — изменение заблокировано без явного отдельного запроса.":"не затрагивается"}.`,
         "",
-        "Следующий безопасный шаг: после проверки плана можно использовать Prepare для Draft PR; main при Offline Plan не изменяется."
+        "Следующий безопасный шаг: при необходимости использовать Prepare для Draft PR; main при Offline Plan не изменяется."
       ];
-      return NextResponse.json({output:lines.join("\\n"),mode:"Offline",inspection:true,productionWrites:false,constructorChanged:false,githubConfigured:githubConfigured()});
+      return NextResponse.json({output:lines.join("\n"),mode:"Offline",inspection:true,candidates,productionWrites:false,constructorChanged:false,githubConfigured:githubConfigured()});
     }
     const key=process.env.AI_GATEWAY_API_KEY||process.env.AI_API_KEY;
     if(!key)return NextResponse.json({output:mode==="Inspect"?`PRINTSHOP inspected from GitHub.\\n\\n${context}`:"AI Gateway пока не подключён. Используй существующий AI_GATEWAY_API_KEY в Production."});
