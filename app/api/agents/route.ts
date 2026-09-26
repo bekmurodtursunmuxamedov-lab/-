@@ -1,6 +1,1 @@
-import { NextResponse } from "next/server";
-import { AGENTS } from "../../../lib/agents";
-
-export async function GET() {
-  return NextResponse.json({ agents: AGENTS });
-}
+import {NextResponse} from "next/server"; export async function GET(){return NextResponse.json({success:true,agents:[{id:"printshop-engineer",name:"PRINTSHOP Engineer",role:"AI Developer",status:"online",target:"bekmurodtursunmuxamedov-lab/print-style-uz",capabilities:["Inspect","Fix","Improve","Deploy"],protectedAreas:["production DB","auth","payments","orders"]}]})}
