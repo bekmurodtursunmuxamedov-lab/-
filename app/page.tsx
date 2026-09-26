@@ -6,12 +6,14 @@ type Integration = { service: string; key: string; configured: boolean };
 type Dashboard = { controlPlane?: { monitoring: string; security: string; orchestration: string; repair: string; verification: string; production: string } };
 type Activity = { id: string; stage: string; status: string; message: string };
 type Health = { ok?: boolean; status?: number; latencyMs?: number };
+type Agent = { id: string; name: string; role: string; status: string; target: string; capabilities: string[]; protected: string[] };
 
 export default function Home() {
   const [ints, setInts] = useState<Integration[]>([]);
   const [dashboard, setDashboard] = useState<Dashboard>({});
   const [activity, setActivity] = useState<Activity[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [mode, setMode] = useState("Inspect");
   const [msg, setMsg] = useState("");
   const [out, setOut] = useState("Готов. Inspect — проверка, Plan — безопасный план без изменений.");
@@ -19,16 +21,18 @@ export default function Home() {
   const [confirmed, setConfirmed] = useState(false);
 
   const refresh = async () => {
-    const [i, d, a, h] = await Promise.all([
+    const [i, d, a, h, reg] = await Promise.all([
       fetch("/api/integrations").then(r => r.json()),
       fetch("/api/agent/dashboard").then(r => r.json()),
       fetch("/api/agent/activity").then(r => r.json()),
       fetch("/api/agent/health").then(r => r.json()),
+      fetch("/api/agent/registry").then(r => r.json()),
     ]);
     setInts(i.integrations || []);
     setDashboard(d);
     setActivity(a.activities || []);
     setHealth(h);
+    setAgents(reg.agents || []);
   };
 
   useEffect(() => { refresh(); }, []);
@@ -72,6 +76,15 @@ export default function Home() {
 
     <section className="grid">
       {["github", "vercel", "supabase", "ai gateway"].map(n => <div className="card" key={n}><div className="small muted">{n}</div><strong className={connected(n) ? "ok" : "bad"}>{connected(n) ? "CONNECTED" : "NOT CONNECTED"}</strong></div>)}
+    </section>
+
+    <section className="card">
+      <div className="small muted">AGENTS</div>
+      {agents.map(agent => <div key={agent.id} className="agent-row">
+        <strong>{agent.name}</strong> <span className="ok">{agent.status}</span>
+        <div className="small muted">{agent.role} · {agent.target}</div>
+        <div className="small">{agent.capabilities.join(" · ")}</div>
+      </div>)}
     </section>
 
     <section className="grid">
