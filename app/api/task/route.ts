@@ -1,8 +1,12 @@
 import {NextResponse} from "next/server";
 import OpenAI from "openai";
-import {inspectPrintshop,githubConfigured,getProjectFile,listProjectFiles} from "../../../lib/github";
+import {createProjectBranch,createProjectPullRequest,inspectPrintshop,githubConfigured,getProjectFile,listProjectFiles,updateProjectFile} from "../../../lib/github";
 
 const protectedWords=["production database","auth","payments","orders","delete users","delete products","drop table"];
+const blockedPaths=[".env","package-lock.json","pnpm-lock.yaml","yarn.lock","bun.lock","supabase/migrations"];
+const safePath=(path:string)=>Boolean(path)&&!path.startsWith("/")&&!path.includes("..")&&!path.includes("\\")&&!path.startsWith(".git/")&&!path.includes("node_modules/")&&!blockedPaths.some(x=>path===x||path.startsWith(x+"/"));
+const parseJson=(text:string)=>JSON.parse(text.trim().replace(/^\\`\\`\\`(?:json)?\\s*/i,"").replace(/\\s*\\`\\`\\`$/,""));
+
 
 async function buildInspection(){
   const base=await inspectPrintshop();
@@ -34,6 +38,28 @@ export async function POST(req:Request){
     if(!key)return NextResponse.json({output:mode==="Inspect"?`PRINTSHOP inspected from GitHub.\\n\\n${context}`:"AI Gateway пока не подключён. Используй существующий AI_GATEWAY_API_KEY в Production."});
     const client=new OpenAI({apiKey:key,baseURL:"https://ai-gateway.vercel.sh/v1"});
     const model=process.env.AI_MODEL||"openai/gpt-5.5";
+    if(mode==="Prepare"){
+      const selectionText=await client.chat.completions.create({model,messages:[
+        {role:"system",content:"You are a safe engineering manager. Select at most 2 EXISTING non-sensitive files from the supplied repository context that are relevant to the task. Never select .env, lockfiles, migrations, auth, payments, orders, or constructor files. Return JSON only: {\"files\":[\"path\"],\"summary\":\"...\"}."},
+        {role:"user",content:`Task: ${message}\nRepository files/context: ${context}`}
+      ]});
+      const selection=parseJson(selectionText.choices[0]?.message?.content||"{}");
+      const files=Array.isArray(selection.files)?selection.files.map(String).slice(0,2):[];
+      if(!files.length||files.some((p:string)=>!safePath(p)||/constructor|конструктор/i.test(p))) return NextResponse.json({output:"Не удалось безопасно выбрать файлы. Main не изменён.",requiresConfirmation:false});
+      const existing=[]; for(const p of files){existing.push(await getProjectFile(p,"main"));}
+      const draftText=await client.chat.completions.create({model,messages:[
+        {role:"system",content:"Create a minimal safe code change for the task. Modify ONLY the supplied files. Do not change secrets, lockfiles, migrations, auth, payments, orders, or constructor. Return JSON only: {\"title\":\"...\",\"body\":\"...\",\"files\":[{\"path\":\"...\",\"content\":\"full file content\"}]}."},
+        {role:"user",content:`Task: ${message}\nSelected files:\n${JSON.stringify(existing)}`}
+      ]});
+      const draft=parseJson(draftText.choices[0]?.message?.content||"{}");
+      if(!Array.isArray(draft.files)||draft.files.length<1||draft.files.length>2) return NextResponse.json({output:"AI не создал безопасный набор изменений. Main не изменён."});
+      for(const ch of draft.files){if(!ch||typeof ch.path!=="string"||typeof ch.content!=="string"||!files.includes(ch.path)||!safePath(ch.path)||/constructor|конструктор/i.test(ch.path)) return NextResponse.json({output:"Изменение заблокировано проверкой безопасности. Main не изменён."});}
+      const branch=`agent/task-${Date.now().toString(36)}`; await createProjectBranch(branch,"main");
+      const changed:string[]=[]; for(const ch of draft.files){const original=existing.find((x:any)=>x.path===ch.path); if(original&&original.content!==ch.content){await updateProjectFile(ch.path,ch.content,`agent: ${String(draft.title||message).slice(0,72)}`,branch); changed.push(ch.path);}}
+      if(!changed.length) return NextResponse.json({output:"Изменений не создано: содержимое файлов не изменилось. Main не изменён."});
+      const pr=await createProjectPullRequest(String(draft.title||"Agent Hub prepared change"),String(draft.body||"Prepared by Agent Hub. Review before merge."),branch,"main");
+      return NextResponse.json({output:`Draft PR #${pr.number} подготовлен.\\nИзменённые файлы: ${changed.join(", ")}\\nMain не изменён.`,pullRequest:{number:pr.number,url:pr.html_url,branch},model,githubConfigured:true});
+    }
     const r=await client.chat.completions.create({
       model,
       messages:[
