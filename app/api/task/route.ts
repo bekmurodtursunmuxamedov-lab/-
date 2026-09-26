@@ -74,6 +74,7 @@ export async function POST(req:Request){
     const client=new OpenAI({apiKey:key,baseURL:"https://ai-gateway.vercel.sh/v1"});
     const model=process.env.AI_MODEL||"openai/gpt-5.5";
     if(mode==="Prepare"){
+      try{
       const selectionText=await client.chat.completions.create({model,messages:[
         {role:"system",content:"You are a safe engineering manager. Select at most 2 EXISTING non-sensitive files from the supplied repository context that are relevant to the task. Never select .env, lockfiles, migrations, auth, payments, orders, or constructor files. Return JSON only: {\"files\":[\"path\"],\"summary\":\"...\"}."},
         {role:"user",content:`Task: ${message}\nRepository files/context: ${context}`}
@@ -94,6 +95,20 @@ export async function POST(req:Request){
       if(!changed.length) return NextResponse.json({output:"Изменений не создано: содержимое файлов не изменилось. Main не изменён."});
       const pr=await createProjectPullRequest(String(draft.title||"Agent Hub prepared change"),String(draft.body||"Prepared by Agent Hub. Review before merge."),branch,"main");
       return NextResponse.json({output:`Draft PR #${pr.number} подготовлен.\\nИзменённые файлы: ${changed.join(", ")}\\nMain не изменён.`,pullRequest:{number:pr.number,url:pr.html_url,branch},model,githubConfigured:true});
+      }catch(e){
+        const detail=e instanceof Error?e.message:"AI Gateway request failed.";
+        const blocked=/credit card|valid credit card|403|billing|unlock your free credits/i.test(detail);
+        return NextResponse.json({
+          output:blocked
+            ?"Prepare недоступен: Vercel AI Gateway требует платёжную карту. Main не изменён. Используй Offline для бесплатного dry-run."
+            :`Prepare не выполнен: ${detail}. Main не изменён. Можно использовать Offline режим.`,
+          mode:"Prepare",
+          fallback:"Offline",
+          productionWrites:false,
+          constructorChanged:false,
+          githubConfigured:githubConfigured()
+        });
+      }
     }
     try{
       const r=await client.chat.completions.create({
