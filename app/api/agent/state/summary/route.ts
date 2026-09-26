@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { getPersistenceStatus } from "@/lib/agent-persistence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const persistence = getPersistenceStatus();
+
   return NextResponse.json({
     ok: true,
     agent: {
@@ -27,8 +30,11 @@ export async function GET() {
       maxRepairAttempts: 2,
     },
     persistence: {
-      registry: "preview-only",
-      activity: "read-only status",
+      configured: persistence.configured,
+      provider: persistence.provider,
+      reason: persistence.reason,
+      registry: persistence.configured ? "durable-ready" : "runtime-only",
+      activity: persistence.configured ? "durable-ready" : "read-only status",
     },
     protectedAreas: ["constructor", "production DB", "auth", "payments", "orders"],
     productionWrites: false,
