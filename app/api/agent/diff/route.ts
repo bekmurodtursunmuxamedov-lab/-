@@ -8,6 +8,12 @@ function blocked(path: string) {
   return value.includes("constructor") || value.includes("supabase/migrations") || value.includes(".env") || value.includes("auth") || value.includes("payment") || value.includes("order");
 }
 
+function relevance(path: string, task: string) {
+  const words = task.toLowerCase().split(/[^a-z0-9а-яё]+/i).filter((word: string) => word.length >= 3);
+  const value = path.toLowerCase();
+  return words.filter((word: string) => value.includes(word)).length;
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const task = typeof body.task === "string" ? body.task.trim() : "";
@@ -24,6 +30,7 @@ export async function POST(request: Request) {
       path,
       contentLength: typeof item.content === "string" ? item.content.length : 0,
       blocked: blocked(path),
+      relevance: relevance(path, task),
     };
   });
 
@@ -37,9 +44,7 @@ export async function POST(request: Request) {
       status: safe ? "awaiting-generation" : "blocked",
       files: candidates,
       changes: [],
-      message: safe
-        ? "Reviewed files are eligible for a future minimal diff. No source changes were generated."
-        : "At least one selected path is protected. No diff was generated.",
+      message: safe ? "Files passed path safety review. No source changes were generated." : "A protected path was selected. No diff was generated.",
     },
     productionWrites: false,
     constructorChanged: false,
