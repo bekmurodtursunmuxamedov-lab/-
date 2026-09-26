@@ -8,3 +8,6 @@ Safety: inspect before write; constructor changes are allowed; never expose secr
 
 
 <!-- integration status panel enabled -->
+
+
+<!-- Agent Hub deployment checkpoint -->
