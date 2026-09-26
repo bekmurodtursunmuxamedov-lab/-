@@ -1,5 +1,5 @@
 import {NextResponse} from "next/server";
-import {getProjectFile} from "@/lib/github";
+import {getProjectFile} from "../../../../lib/github";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
