@@ -80,6 +80,25 @@ export default function AgentsPage() {
     }
   };
 
+  const setAgentStatus = async (agentId: string, status: "active" | "paused") => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/agents", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "status", id: agentId, status }),
+      });
+      const data = await response.json();
+      setMessage(data.error || (data.ok ? `Агент: ${status}` : "Не удалось изменить статус."));
+      await load();
+    } catch {
+      setMessage("Не удалось изменить статус агента.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const runTask = async (taskId: string) => {
     if (busy) return;
     setBusy(true);
@@ -152,6 +171,13 @@ export default function AgentsPage() {
             <p className="small muted">{agent.target}</p>
             <div className="small">{agent.capabilities.join(" · ")}</div>
             <p className="small"><span className="ok">{agent.status}</span></p>
+            <div className="row">
+              {agent.status === "active" ? (
+                <button className="send" type="button" onClick={() => setAgentStatus(agent.id, "paused")} disabled={busy}>Пауза</button>
+              ) : (
+                <button className="send" type="button" onClick={() => setAgentStatus(agent.id, "active")} disabled={busy}>Возобновить</button>
+              )}
+            </div>
             <div className="small muted">Protected: {agent.protected.join(" · ")}</div>
           </article>
         ))}
