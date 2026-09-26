@@ -34,6 +34,29 @@ export async function POST(req:Request){
       try{context=JSON.stringify(await buildInspection());}
       catch(e){context=`GitHub inspection failed: ${e instanceof Error?e.message:"unknown error"}`;}
     }
+    if(mode==="Offline"){
+      const protectedHit=protectedWords.filter(x=>message.toLowerCase().includes(x));
+      const constructorRequested=/constructor|конструктор/i.test(message);
+      const inspectionAvailable=!context.startsWith("GitHub inspection failed")&&context!=="GitHub inspection unavailable.";
+      const lines=[
+        "OFFLINE PLAN — без AI Gateway и без записи в production",
+        "",
+        `Задача: ${message}`,
+        `GitHub inspection: ${inspectionAvailable?"получен":"недоступен"}`,
+        "",
+        "План:",
+        "1. Проанализировать существующую структуру PRINTSHOP.",
+        "2. Определить минимальные файлы, связанные с задачей.",
+        "3. Проверить изменения на запрещённые пути и чувствительные области.",
+        "4. Выполнить только dry-run: ничего не менять и PR не создавать.",
+        "",
+        `Защищённые области: ${protectedHit.length?protectedHit.join(", "):"не обнаружены в тексте задачи"}.`,
+        `Конструктор: ${constructorRequested?"запрос обнаружен — изменение заблокировано без явного отдельного запроса.":"не затрагивается"}.`,
+        "",
+        "Следующий безопасный шаг: после проверки плана можно использовать Prepare для Draft PR; main при Offline Plan не изменяется."
+      ];
+      return NextResponse.json({output:lines.join("\\n"),mode:"Offline",inspection:true,productionWrites:false,constructorChanged:false,githubConfigured:githubConfigured()});
+    }
     const key=process.env.AI_GATEWAY_API_KEY||process.env.AI_API_KEY;
     if(!key)return NextResponse.json({output:mode==="Inspect"?`PRINTSHOP inspected from GitHub.\\n\\n${context}`:"AI Gateway пока не подключён. Используй существующий AI_GATEWAY_API_KEY в Production."});
     const client=new OpenAI({apiKey:key,baseURL:"https://ai-gateway.vercel.sh/v1"});
