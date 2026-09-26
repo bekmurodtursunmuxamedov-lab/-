@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 
 type Integration = { service: string; key: string; configured: boolean };
-type Dashboard = { controlPlane?: { monitoring: string; security: string; orchestration: string; repair: string; verification: string; production: string }; agents?: { id: string; status: string }[] };
+type Dashboard = { controlPlane?: { monitoring: string; security: string; orchestration: string; repair: string; verification: string; production: string } };
+type Activity = { id: string; stage: string; status: string; message: string };
+type Health = { ok?: boolean; status?: number; latencyMs?: number };
 
 export default function Home() {
   const [ints, setInts] = useState<Integration[]>([]);
   const [dashboard, setDashboard] = useState<Dashboard>({});
-  const [activity, setActivity] = useState<any[]>([]);
-  const [health, setHealth] = useState<any>(null);
+  const [activity, setActivity] = useState<Activity[]>([]);
+  const [health, setHealth] = useState<Health | null>(null);
   const [mode, setMode] = useState("Inspect");
   const [msg, setMsg] = useState("");
   const [out, setOut] = useState("Готов. Inspect — проверка, Plan — безопасный план без изменений.");
@@ -58,6 +60,10 @@ export default function Home() {
 
   const connected = (s: string) => ints.find(i => i.service.toLowerCase().includes(s))?.configured;
   const cp = dashboard.controlPlane || {};
+  const stages: [string, string | undefined][] = [
+    ["Monitoring", cp.monitoring], ["Security", cp.security], ["Orchestration", cp.orchestration],
+    ["Repair", cp.repair], ["Verification", cp.verification], ["Production", cp.production],
+  ];
 
   return <main className="shell">
     <span className="badge">⚡ AGENT HUB · CONTROL PLANE</span>
@@ -69,9 +75,7 @@ export default function Home() {
     </section>
 
     <section className="grid">
-      {[["Monitoring", cp.monitoring], ["Security", cp.security], ["Orchestration", cp.orchestration], ["Repair", cp.repair], ["Verification", cp.verification], ["Production", cp.production]].map(([name, value]) =>
-        <div className="card" key={String(name)}><div className="small muted">{name}</div><strong>{String(value || "unknown")}</strong></div>
-      )}
+      {stages.map(([name, value]) => <div className="card" key={name}><div className="small muted">{name}</div><strong>{value || "unknown"}</strong></div>)}
     </section>
 
     <section className="card">
