@@ -21,6 +21,7 @@ export async function POST(req:Request){
     const b=await req.json();
     const message=String(b.message||"").trim(),mode=String(b.mode||"Inspect");
     if(!message)return NextResponse.json({error:"Task message is required."},{status:400});
+    if(mode==="Plan" && protectedWords.some(x=>message.toLowerCase().includes(x))) return NextResponse.json({output:"План затрагивает защищённую область. Изменения production DB/auth/payments/orders не выполняются автоматически."});
     if(["Fix","Improve","Deploy"].includes(mode)&&protectedWords.some(x=>message.toLowerCase().includes(x)))
       return NextResponse.json({output:"Задача затрагивает защищённую область. Нужна явная проверка и подтверждение перед изменением production."});
     let context="GitHub inspection unavailable.";
