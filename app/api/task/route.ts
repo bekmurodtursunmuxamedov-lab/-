@@ -17,7 +17,7 @@ function jsonFrom(text:string){
 }
 async function ai(model:string,key:string,messages:any[]){
   const client=new OpenAI({apiKey:key,baseURL:"https://ai-gateway.vercel.sh/v1"});
-  const r=await client.chat.completions.create({model,messages,response_format:{type:"json_object"}});
+  const r=await client.chat.completions.create({model,messages});
   return r.choices[0]?.message?.content||"{}";
 }
 export async function POST(req:Request){
