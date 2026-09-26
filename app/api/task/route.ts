@@ -2,9 +2,15 @@ import {NextResponse} from "next/server";
 import OpenAI from "openai";
 import {createProjectBranch,createProjectPullRequest,inspectPrintshop,githubConfigured,getProjectFile,listProjectFiles,updateProjectFile} from "../../../lib/github";
 
-const protectedWords=["production database","auth","payments","orders","delete users","delete products","drop table"];\nconst blockedPaths=[".env","package-lock.json","pnpm-lock.yaml","yarn.lock","bun.lock","supabase/migrations"];\nconst constructorPattern=/(constructor|конструктор)/i;
+const protectedWords=["production database","auth","payments","orders","delete users","delete products","drop table"];
+const blockedPaths=[".env","package-lock.json","pnpm-lock.yaml","yarn.lock","bun.lock","supabase/migrations"];
+const constructorPattern=/(constructor|конструктор)/i;
 
-function safePath(path:string){return Boolean(path)&&!path.startsWith("/")&&!path.includes("..")&&!path.includes("\\")&&!path.startsWith(".git/")&&!path.includes("node_modules/")&&!blockedPaths.some(x=>path===x||path.startsWith(x+"/"));}\nfunction parseJson(text:string){const cleaned=text.trim().replace(/^```(?:json)?\\s*/i,"").replace(/\\s*```$/,"");return JSON.parse(cleaned);}\nasync function ask(client:OpenAI,model:string,messages:any[]){const r=await client.chat.completions.create({model,messages});return r.choices[0]?.message?.content||"";}\n\nasync function buildInspection(){
+function safePath(path:string){return Boolean(path)&&!path.startsWith("/")&&!path.includes("..")&&!path.includes("\\")&&!path.startsWith(".git/")&&!path.includes("node_modules/")&&!blockedPaths.some(x=>path===x||path.startsWith(x+"/"));}
+function parseJson(text:string){const cleaned=text.trim().replace(/^```(?:json)?\\s*/i,"").replace(/\\s*```$/,"");return JSON.parse(cleaned);}
+async function ask(client:OpenAI,model:string,messages:any[]){const r=await client.chat.completions.create({model,messages});return r.choices[0]?.message?.content||"";}
+
+async function buildInspection(){
   const base=await inspectPrintshop();
   const files=await listProjectFiles("main");
   const packageJson=await getProjectFile("package.json","main");
