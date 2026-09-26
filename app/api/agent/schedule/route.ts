@@ -10,7 +10,8 @@ export async function GET() {
     heartbeat: {
       enabled: true,
       intervalMinutes: 15,
-      action: "inspect-and-report",
+      action: "inspect-dispatch-and-report",
+      dispatchEndpoint: "/api/agent/scheduler",
       productionWrites: false,
     },
     autonomousRepair: {
@@ -18,6 +19,11 @@ export async function GET() {
       maxAttempts: 2,
       requiresVerification: true,
     },
-    message: "Scheduled monitoring is enabled; changes remain gated by verification and Draft PR.",
+    queue: {
+      enabled: true,
+      runner: "safe-task-runner",
+      persistence: "runtime-only",
+    },
+    message: "Scheduled monitoring can dispatch observations into the safe task runner; production changes remain gated by verification and Draft PR.",
   });
 }
