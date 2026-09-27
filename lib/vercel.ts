@@ -1,5 +1,5 @@
 const TEAM_ID = process.env.VERCEL_TEAM_ID;
-const PROJECT_ID = process.env.VERCEL_PROJECT_ID || "prj_lk9WHB5oxslhAarXkZ3cgTw6VXPp";
+const PROJECT_ID = process.env.VERCEL_PROJECT_ID || "prj_rHne86ZngMz39BzCFqBvs9mIcdLh";
 
 const query = TEAM_ID ? `?teamId=${encodeURIComponent(TEAM_ID)}` : "";
 
