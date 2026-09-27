@@ -6,6 +6,13 @@ export type PersistenceRuntimeResult = {
   reason: string;
 };
 
+export type PersistenceConnectivityResult = {
+  configured: boolean;
+  connected: boolean;
+  state: "configured" | "misconfigured" | "not-configured" | "error";
+  reason: string;
+};
+
 export type PersistedTasksResult = PersistenceRuntimeResult & {
   tasks: NormalizedTask[];
 };
@@ -14,6 +21,7 @@ export type PersistedEventsResult = PersistenceRuntimeResult & {
   events: unknown[];
 };
 
+export function checkPersistenceConnection(env?: Record<string, string | undefined>, fetchImpl?: typeof fetch): Promise<PersistenceConnectivityResult>;
 export function persistAgent(agent: unknown, env?: Record<string, string | undefined>, fetchImpl?: typeof fetch): Promise<PersistenceRuntimeResult>;
 export function persistTask(task: unknown, env?: Record<string, string | undefined>, fetchImpl?: typeof fetch): Promise<PersistenceRuntimeResult>;
 export function persistEvent(event: unknown, env?: Record<string, string | undefined>, fetchImpl?: typeof fetch): Promise<PersistenceRuntimeResult>;

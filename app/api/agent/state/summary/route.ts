@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const persistence = getPersistenceStatus();
+  const persistence = await getPersistenceStatus();
 
   return NextResponse.json({
     ok: true,
@@ -26,15 +26,17 @@ export async function GET() {
     },
     scheduler: {
       enabled: true,
-      intervalMinutes: 15,
+      schedule: "0 3 * * *",
+      precision: "daily on Vercel Hobby",
       maxRepairAttempts: 2,
     },
     persistence: {
       configured: persistence.configured,
+      connected: persistence.connected,
       provider: persistence.provider,
       reason: persistence.reason,
-      registry: persistence.configured ? "durable-ready" : "runtime-only",
-      activity: persistence.configured ? "durable-ready" : "read-only status",
+      registry: persistence.configured && persistence.connected ? "durable-ready" : "runtime-only",
+      activity: persistence.configured && persistence.connected ? "durable-ready" : "read-only status",
     },
     protectedAreas: ["constructor", "production DB", "auth", "payments", "orders"],
     productionWrites: false,

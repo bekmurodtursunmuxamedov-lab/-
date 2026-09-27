@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const persistence = getPersistenceStatus();
+  const persistence = await getPersistenceStatus();
 
   return NextResponse.json({
     ok: true,

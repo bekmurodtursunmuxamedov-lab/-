@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 const protectedAreas = ["constructor", "production DB", "auth", "payments", "orders"];
 
 export async function GET() {
-  const persistence = getPersistenceStatus();
+  const persistence = await getPersistenceStatus();
 
   return NextResponse.json({
     ok: true,

@@ -43,14 +43,11 @@ export async function POST(request: Request) {
 
   const result = runTask(task.id);
   const completedTask = result?.task ?? task;
-  const finalEvent = emitEvent({
-    type: result?.ok ? "task.completed" : "task.failed",
-    agentId,
-    taskId: task.id,
-    payload: { source, nextAction: result?.nextAction ?? "task-queued" },
-  });
+  const lifecyclePersistence = await Promise.all(
+    (result?.events ?? []).map((event) => persistEvent(event)),
+  );
   const finalTaskPersistence = await persistTask(completedTask);
-  const finalEventPersistence = await persistEvent(finalEvent);
+  const lifecyclePersisted = lifecyclePersistence.some((entry) => entry.persisted);
 
   return NextResponse.json({
     ok: Boolean(result?.ok),
@@ -60,9 +57,9 @@ export async function POST(request: Request) {
     stages: result?.stages ?? [],
     nextAction: result?.nextAction ?? "task-queued",
     persistence: {
-      enabled: agentPersistence.persisted || taskPersistence.persisted || eventPersistence.persisted || finalTaskPersistence.persisted || finalEventPersistence.persisted,
+      enabled: agentPersistence.persisted || taskPersistence.persisted || eventPersistence.persisted || finalTaskPersistence.persisted || lifecyclePersisted,
       task: finalTaskPersistence,
-      event: finalEventPersistence,
+      events: lifecyclePersistence,
     },
     productionWrites: false,
   }, { status: result?.ok ? 200 : 409 });
