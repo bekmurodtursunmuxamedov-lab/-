@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAgent } from "@/lib/agent-registry-store";
 import { enqueueTask } from "@/lib/agent-task-queue";
 import { runTask } from "@/lib/agent-task-runner";
+import { persistAgent, persistEvent, persistTask } from "@/lib/agent-persistence-runtime.mjs";
+import { emitEvent } from "@/lib/agent-event-bus.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,16 +31,39 @@ export async function POST(request: Request) {
   }
 
   const task = enqueueTask(agentId, observation);
+  const agentPersistence = await persistAgent(agent);
+  const queuedEvent = emitEvent({
+    type: "task.queued",
+    agentId,
+    taskId: task.id,
+    payload: { source },
+  });
+  const taskPersistence = await persistTask(task);
+  const eventPersistence = await persistEvent(queuedEvent);
+
   const result = runTask(task.id);
+  const completedTask = result?.task ?? task;
+  const finalEvent = emitEvent({
+    type: result?.ok ? "task.completed" : "task.failed",
+    agentId,
+    taskId: task.id,
+    payload: { source, nextAction: result?.nextAction ?? "task-queued" },
+  });
+  const finalTaskPersistence = await persistTask(completedTask);
+  const finalEventPersistence = await persistEvent(finalEvent);
 
   return NextResponse.json({
     ok: Boolean(result?.ok),
     scheduled: true,
     source,
-    task: result?.task ?? task,
+    task: completedTask,
     stages: result?.stages ?? [],
     nextAction: result?.nextAction ?? "task-queued",
-    persistence: "runtime-only",
+    persistence: {
+      enabled: agentPersistence.persisted || taskPersistence.persisted || eventPersistence.persisted || finalTaskPersistence.persisted || finalEventPersistence.persisted,
+      task: finalTaskPersistence,
+      event: finalEventPersistence,
+    },
     productionWrites: false,
   }, { status: result?.ok ? 200 : 409 });
 }
@@ -48,10 +73,11 @@ export async function GET() {
     ok: true,
     scheduler: {
       enabled: true,
-      intervalMinutes: 15,
+      schedule: "0 3 * * *",
+      precision: "daily on Vercel Hobby",
       mode: "safe-dispatch",
       automaticProductionWrites: false,
-      persistence: "runtime-only",
+      persistence: "opt-in",
     },
   });
 }
