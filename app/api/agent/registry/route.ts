@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getPersistenceStatus } from "@/lib/agent-persistence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -6,6 +7,8 @@ export const dynamic = "force-dynamic";
 const protectedAreas = ["constructor", "production DB", "auth", "payments", "orders"];
 
 export async function GET() {
+  const persistence = getPersistenceStatus();
+
   return NextResponse.json({
     ok: true,
     agents: [{
@@ -17,7 +20,7 @@ export async function GET() {
       capabilities: ["inspect", "security", "repair", "preview", "draft-pr"],
       protectedAreas,
     }],
-    persistence: "not-configured",
+    persistence,
     productionWrites: false,
   });
 }
