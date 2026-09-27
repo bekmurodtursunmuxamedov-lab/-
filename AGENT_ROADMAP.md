@@ -11,8 +11,8 @@
 - [x] identify PRINTSHOP Supabase project
 - [x] define production URL
 - [x] server-side GitHub read-only inspection adapter
-- [ ] server-side Vercel deployment adapter
-- [ ] server-side Supabase read-only adapter
+- [x] server-side Vercel deployment adapter
+- [x] server-side Supabase read-only adapter
 - [x] production HTTP health check
 
 ## Phase 3 — safe engineering actions
