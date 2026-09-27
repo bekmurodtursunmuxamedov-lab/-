@@ -9,9 +9,9 @@ async function checkTarget() {
   const started = Date.now();
   try {
     const response = await fetch(target, { cache: "no-store" });
-    return { ok: response.ok, status: response.status, latencyMs: Date.now() - started };
+    return { ok: response.ok, httpStatus: response.status, latencyMs: Date.now() - started };
   } catch {
-    return { ok: false, status: 0, latencyMs: Date.now() - started };
+    return { ok: false, httpStatus: 0, latencyMs: Date.now() - started };
   }
 }
 
