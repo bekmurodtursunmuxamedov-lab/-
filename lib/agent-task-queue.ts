@@ -1,3 +1,5 @@
+import { normalizePersistedTask, type NormalizedTask } from "./persisted-task.mjs";
+
 export type AgentTaskStatus = "queued" | "running" | "completed" | "failed";
 
 export type AgentTask = {
@@ -23,6 +25,23 @@ export function enqueueTask(agentId: string, message: string): AgentTask {
   };
   tasks.set(task.id, task);
   return task;
+}
+
+export function restoreTask(input: NormalizedTask): AgentTask {
+  const task: AgentTask = {
+    id: input.id,
+    agentId: input.agentId,
+    message: input.message,
+    status: input.status,
+    createdAt: input.createdAt,
+    updatedAt: input.updatedAt,
+  };
+  tasks.set(task.id, task);
+  return task;
+}
+
+export function restoreTaskFromRow(row: unknown): AgentTask {
+  return restoreTask(normalizePersistedTask(row as never));
 }
 
 export function listTasks(agentId?: string): AgentTask[] {
