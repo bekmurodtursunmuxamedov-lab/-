@@ -83,11 +83,11 @@ export default function Home() {
 
     <section className="grid">
       {[
-        ["github", connected("github") ? "CONNECTED" : "NOT CONNECTED", Boolean(connected("github"))],
-        ["vercel", adapters.vercel ? integrationLabel(adapters.vercel) : "CHECKING...", Boolean(adapters.vercel?.connected)],
-        ["supabase", adapters.supabase ? integrationLabel(adapters.supabase) : "CHECKING...", Boolean(adapters.supabase?.connected)],
-        ["ai gateway", connected("ai gateway") ? "CONNECTED" : "NOT CONNECTED", Boolean(connected("ai gateway"))],
-      ].map(([n, label, ok]) => <div className="card" key={n}><div className="small muted">{n}</div><strong className={ok ? "ok" : "bad"}>{label}</strong></div>)}
+        { name: "github", label: connected("github") ? "CONNECTED" : "NOT CONNECTED", ok: Boolean(connected("github")) },
+        { name: "vercel", label: adapters.vercel ? integrationLabel(adapters.vercel) : "CHECKING...", ok: Boolean(adapters.vercel?.connected) },
+        { name: "supabase", label: adapters.supabase ? integrationLabel(adapters.supabase) : "CHECKING...", ok: Boolean(adapters.supabase?.connected) },
+        { name: "ai gateway", label: connected("ai gateway") ? "CONNECTED" : "NOT CONNECTED", ok: Boolean(connected("ai gateway")) },
+      ].map(item => <div className="card" key={item.name}><div className="small muted">{item.name}</div><strong className={item.ok ? "ok" : "bad"}>{item.label}</strong></div>)}
     </section>
 
     <section className="card">
