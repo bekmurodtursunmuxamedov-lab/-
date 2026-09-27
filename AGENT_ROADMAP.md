@@ -14,6 +14,7 @@
 - [x] server-side Vercel deployment adapter
 - [x] server-side Supabase read-only adapter
 - [x] production HTTP health check
+- [x] secured scheduled monitoring trigger
 
 ## Phase 3 — safe engineering actions
 - [x] generate change plan
@@ -38,7 +39,10 @@
 - [x] per-agent task queue
 - [x] safe task runner
 - [x] scheduler dispatch
-- [ ] durable agent/task persistence
+- [x] dedicated persistence configuration contract
+- [x] dedicated persistence REST adapter
+- [x] runtime lifecycle writes use dedicated persistence when configured
+- [ ] durable agent/task persistence (requires dedicated store credentials + schema activation)
 - [x] cross-agent event bus
 - [ ] durable activity/audit storage
 
@@ -46,7 +50,8 @@
 - Vercel deployment API integration is not configured in Agent Hub.
 - Supabase read-only integration is not configured in Agent Hub.
 - AI Gateway may require billing verification; Offline mode remains available.
-- Runtime registry/queue and event bus are intentionally non-durable until a persistence store is connected.
+- Runtime registry/queue and event bus remain non-durable in the fallback mode. When the dedicated Agent Hub store is configured and its schema is active, task snapshots and lifecycle events are written through the server-side persistence gateway.
+- Vercel Hobby scheduled monitoring is configured for once-daily execution; higher-frequency monitoring requires a plan/service that supports the needed cadence.
 
 No production database mutation is part of the automatic workflow.
 The PRINTSHOP constructor remains protected and requires explicit user request.
