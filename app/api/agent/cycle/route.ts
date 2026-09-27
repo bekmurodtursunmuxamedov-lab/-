@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { getAgent } from "@/lib/agent-registry-store";
 import { enqueueTask } from "@/lib/agent-task-queue";
 import { runTask } from "@/lib/agent-task-runner";
+import { emitEvent } from "@/lib/agent-event-bus.mjs";
 import { isAuthorizedCronRequest } from "@/lib/cron-auth.mjs";
+import { persistAgent, persistEvent, persistTask } from "@/lib/agent-persistence-runtime.mjs";
 
 type Incident = {
   id: string;
@@ -89,20 +91,47 @@ export async function GET(request: Request) {
   }));
 
   const agent = getAgent("printshop-engineer");
-  const dispatchedTasks = incidents.map((incident) => {
+  const dispatchedTasks = await Promise.all(incidents.map(async (incident) => {
     if (!agent || agent.status !== "active") {
       return { incidentId: incident.id, status: "not-dispatched", reason: "agent-not-active" };
     }
+
+    await persistAgent(agent);
     const task = enqueueTask(incident.agentId, incident.summary);
+
+    const detectedEvent = emitEvent({
+      type: "incident.detected",
+      agentId: incident.agentId,
+      taskId: task.id,
+      payload: { targetId: incident.targetId, summary: incident.summary },
+    });
+    const queuedEvent = emitEvent({ type: "task.queued", agentId: incident.agentId, taskId: task.id });
+
+    await persistEvent(detectedEvent);
+    await persistEvent(queuedEvent);
+    await persistTask(task);
+
     const result = runTask(task.id);
+    const completedTask = result?.task ?? task;
+    const finalEvent = emitEvent({
+      type: result?.ok ? "task.completed" : "task.failed",
+      agentId: incident.agentId,
+      taskId: task.id,
+      payload: { nextAction: result?.nextAction ?? "task-queued" },
+    });
+    const taskPersistence = await persistTask(completedTask);
+    const eventPersistence = await persistEvent(finalEvent);
+
     return {
       incidentId: incident.id,
-      status: result?.task.status ?? "failed",
-      taskId: result?.task.id ?? task.id,
+      status: completedTask.status,
+      taskId: completedTask.id,
       nextAction: result?.nextAction ?? "task-queued",
       stages: result?.stages ?? [],
+      persisted: taskPersistence.persisted || eventPersistence.persisted,
+      persistenceState: taskPersistence.state,
     };
-  });
+  }));
 
   return NextResponse.json({
     ok: incidents.length === 0,
@@ -110,7 +139,7 @@ export async function GET(request: Request) {
     targets: results,
     tasks: dispatchedTasks,
     incidents,
-    persistence: "runtime-only",
+    persistence: "opt-in",
     productionWrites: false,
     constructorChanged: false,
   });
