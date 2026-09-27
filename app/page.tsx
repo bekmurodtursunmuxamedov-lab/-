@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 type Integration = { service: string; key: string; configured: boolean };
-type Dashboard = { controlPlane?: { monitoring: string; security: string; orchestration: string; repair: string; verification: string; production: string } };
+type ControlPlane = { monitoring?: string; security?: string; orchestration?: string; repair?: string; verification?: string; production?: string };\ntype Dashboard = { controlPlane?: ControlPlane };
 type Activity = { id: string; stage: string; status: string; message: string };
 type Health = { ok?: boolean; status?: number; latencyMs?: number };
 type Agent = { id: string; name: string; role: string; status: string; target: string; capabilities: string[]; protected: string[] };
@@ -63,7 +63,7 @@ export default function Home() {
   };
 
   const connected = (s: string) => ints.find(i => i.service.toLowerCase().includes(s))?.configured;
-  const cp: Partial<NonNullable<Dashboard["controlPlane"]>> = dashboard.controlPlane || {};
+  const cp = dashboard.controlPlane ?? {};
   const stages: [string, string | undefined][] = [
     ["Monitoring", cp.monitoring], ["Security", cp.security], ["Orchestration", cp.orchestration],
     ["Repair", cp.repair], ["Verification", cp.verification], ["Production", cp.production],
