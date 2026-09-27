@@ -1,0 +1,14 @@
+export type PersistenceRuntimeResult = {
+  persisted: boolean;
+  state: "configured" | "misconfigured" | "not-configured" | "error";
+  reason: string;
+};
+
+export type PersistedTasksResult = PersistenceRuntimeResult & {
+  tasks: unknown[];
+};
+
+export function persistAgent(agent: unknown, env?: Record<string, string | undefined>, fetchImpl?: typeof fetch): Promise<PersistenceRuntimeResult>;
+export function persistTask(task: unknown, env?: Record<string, string | undefined>, fetchImpl?: typeof fetch): Promise<PersistenceRuntimeResult>;
+export function persistEvent(event: unknown, env?: Record<string, string | undefined>, fetchImpl?: typeof fetch): Promise<PersistenceRuntimeResult>;
+export function listPersistedTasks(agentId?: string, env?: Record<string, string | undefined>, fetchImpl?: typeof fetch): Promise<PersistedTasksResult>;
