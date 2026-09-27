@@ -5,6 +5,11 @@ on:
     branches:
       - "agent/agent-core-scheduler"
       - "agent/review-endpoint"
+      - "agent/lifecycle-persistence"
+      - "main"
+  pull_request:
+    branches:
+      - "main"
   workflow_dispatch:
 
 jobs:
