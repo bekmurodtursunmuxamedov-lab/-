@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAgent } from "@/lib/agent-registry-store";
 import { enqueueTask } from "@/lib/agent-task-queue";
 import { runTask } from "@/lib/agent-task-runner";
+import { emitEvent } from "@/lib/agent-event-bus.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,8 @@ export async function POST(request: Request) {
   if (agent.status !== "active") return NextResponse.json({ ok: false, error: "agent is not active" }, { status: 409 });
 
   const task = enqueueTask(agentId, summary);
+  emitEvent({ type: "incident.detected", agentId, taskId: task.id, payload: { targetId, summary } });
+  emitEvent({ type: "task.queued", agentId, taskId: task.id });
   const result = runTask(task.id);
 
   return NextResponse.json({
