@@ -48,3 +48,10 @@ The hub must never display or store agent secrets in client code.
 ## Separation rules
 
 AGENT HUB source lives in this repository. PRINTSHOP source remains in print-style-uz. Do not use PRINTSHOP production Supabase as the hub database without explicit approval.
+
+
+## Runtime event bus
+The control plane publishes incident and task lifecycle events through a bounded in-memory event bus. The runtime bus remains available as the fast path; when the dedicated persistence store is configured, task snapshots and lifecycle events are also written server-side.
+
+## Persistence boundary
+Agent Hub persistence is opt-in and must use a dedicated database project. The server-side REST adapter maps Agent Hub records to the dedicated Supabase schema and never exposes its server key to the browser. PRINTSHOP production data is read-only to the monitoring adapters and is never used as the Agent Hub task/event store.
