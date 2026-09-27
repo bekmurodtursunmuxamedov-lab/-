@@ -1,3 +1,5 @@
+import type { NormalizedTask } from "./persisted-task.mjs";
+
 export type PersistenceRuntimeResult = {
   persisted: boolean;
   state: "configured" | "misconfigured" | "not-configured" | "error";
@@ -5,7 +7,7 @@ export type PersistenceRuntimeResult = {
 };
 
 export type PersistedTasksResult = PersistenceRuntimeResult & {
-  tasks: unknown[];
+  tasks: NormalizedTask[];
 };
 
 export type PersistedEventsResult = PersistenceRuntimeResult & {
