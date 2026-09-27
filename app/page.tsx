@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { integrationLabel } from "@/lib/integration-status.mjs";
 
 type Integration = { service: string; key: string; configured: boolean };
 type ControlPlane = { monitoring?: string; security?: string; orchestration?: string; repair?: string; verification?: string; production?: string };
@@ -8,6 +9,7 @@ type Dashboard = { controlPlane?: ControlPlane };
 type Activity = { id: string; stage: string; status: string; message: string };
 type Health = { ok?: boolean; status?: number; latencyMs?: number };
 type Agent = { id: string; name: string; role: string; status: string; target: string; capabilities: string[]; protected: string[] };
+type AdapterState = { configured?: boolean; connected?: boolean; error?: string };
 
 export default function Home() {
   const [ints, setInts] = useState<Integration[]>([]);
@@ -20,20 +22,24 @@ export default function Home() {
   const [out, setOut] = useState("Готов. Inspect — проверка, Plan — безопасный план без изменений.");
   const [busy, setBusy] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [adapters, setAdapters] = useState<{ vercel: AdapterState | null; supabase: AdapterState | null }>({ vercel: null, supabase: null });
 
   const refresh = async () => {
-    const [i, d, a, h, reg] = await Promise.all([
+    const [i, d, a, h, reg, v, s] = await Promise.all([
       fetch("/api/integrations").then(r => r.json()),
       fetch("/api/agent/dashboard").then(r => r.json()),
       fetch("/api/agent/activity").then(r => r.json()),
       fetch("/api/agent/health").then(r => r.json()),
       fetch("/api/agent/registry").then(r => r.json()),
+      fetch("/api/agent/vercel/status").then(r => r.json()),
+      fetch("/api/agent/supabase/status").then(r => r.json()),
     ]);
     setInts(i.integrations || []);
     setDashboard(d);
     setActivity(a.activities || []);
     setHealth(h);
     setAgents(reg.agents || []);
+    setAdapters({ vercel: v, supabase: s });
   };
 
   useEffect(() => { refresh(); }, []);
@@ -76,7 +82,12 @@ export default function Home() {
     <p className="muted">Автономный инженерный центр управления PRINTSHOP.</p>
 
     <section className="grid">
-      {["github", "vercel", "supabase", "ai gateway"].map(n => <div className="card" key={n}><div className="small muted">{n}</div><strong className={connected(n) ? "ok" : "bad"}>{connected(n) ? "CONNECTED" : "NOT CONNECTED"}</strong></div>)}
+      {[
+        ["github", connected("github") ? "CONNECTED" : "NOT CONNECTED", Boolean(connected("github"))],
+        ["vercel", adapters.vercel ? integrationLabel(adapters.vercel) : "CHECKING...", Boolean(adapters.vercel?.connected)],
+        ["supabase", adapters.supabase ? integrationLabel(adapters.supabase) : "CHECKING...", Boolean(adapters.supabase?.connected)],
+        ["ai gateway", connected("ai gateway") ? "CONNECTED" : "NOT CONNECTED", Boolean(connected("ai gateway"))],
+      ].map(([n, label, ok]) => <div className="card" key={n}><div className="small muted">{n}</div><strong className={ok ? "ok" : "bad"}>{label}</strong></div>)}
     </section>
 
     <section className="card">
