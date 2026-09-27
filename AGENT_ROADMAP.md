@@ -29,7 +29,7 @@
 - [x] post-deploy HTTP verification
 - [x] explicit production confirmation gate
 - [x] rollback preview guard
-- [ ] real production deployment adapter
+- [x] real production deployment adapter
 
 ## Phase 5 — multi-agent control plane
 - [x] shared agent registry model
