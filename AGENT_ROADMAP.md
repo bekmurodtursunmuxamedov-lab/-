@@ -42,16 +42,23 @@
 - [x] dedicated persistence configuration contract
 - [x] dedicated persistence REST adapter
 - [x] runtime lifecycle writes use dedicated persistence when configured
-- [ ] durable agent/task persistence (requires dedicated store credentials + schema activation)
+- [x] durable agent/task persistence (dedicated store active; production connectivity and durable task/event reads verified)
 - [x] cross-agent event bus
-- [ ] durable activity/audit storage
+- [x] durable activity/audit storage (agent events persisted and read through dedicated store)
 
 ## Known integration blockers
-- Vercel deployment API integration is not configured in Agent Hub.
-- Supabase read-only integration is not configured in Agent Hub.
+- Vercel deployment API integration is not configured in Agent Hub; `VERCEL_TOKEN` is still required.
+- Supabase read-only integration is not configured in Agent Hub; production `SUPABASE_URL` + read-only key are still required.
 - AI Gateway may require billing verification; Offline mode remains available.
-- Runtime registry/queue and event bus remain non-durable in the fallback mode. When the dedicated Agent Hub store is configured and its schema is active, task snapshots and lifecycle events are written through the server-side persistence gateway.
+- Runtime registry/queue and event bus remain fallback-safe; when the dedicated Agent Hub store is configured, task snapshots and lifecycle events use the server-side persistence gateway.
 - Vercel Hobby scheduled monitoring is configured for once-daily execution; higher-frequency monitoring requires a plan/service that supports the needed cadence.
 
 No production database mutation is part of the automatic workflow.
 The PRINTSHOP constructor remains protected and requires explicit user request.
+
+## Verified 2026-09-27
+- Dedicated Agent Hub Supabase store is active and healthy.
+- Production persistence status reports the dedicated Supabase Data API as reachable.
+- Production task/event list endpoints return `persisted: true`.
+- GitHub read-only inspection is configured and successfully reads PRINTSHOP.
+- AI Gateway is configured but its live request is currently blocked by Vercel billing verification; Offline mode remains available.
