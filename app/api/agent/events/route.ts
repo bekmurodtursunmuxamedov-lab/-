@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listEvents } from "@/lib/agent-event-bus.mjs";
+import { listEvents, type AgentEventType } from "@/lib/agent-event-bus.mjs";
 import { listPersistedEvents } from "@/lib/agent-persistence-runtime.mjs";
 
 export const runtime = "nodejs";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const agentId = url.searchParams.get("agentId") || undefined;
-  const type = url.searchParams.get("type") || undefined;
+  const type = url.searchParams.get("type") as AgentEventType | undefined;
   const persisted = await listPersistedEvents(agentId, type);
 
   if (persisted.persisted) {
