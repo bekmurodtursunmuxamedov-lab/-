@@ -39,14 +39,14 @@
 - [x] safe task runner
 - [x] scheduler dispatch
 - [ ] durable agent/task persistence
-- [ ] cross-agent event bus
+- [x] cross-agent event bus
 - [ ] durable activity/audit storage
 
 ## Known integration blockers
 - Vercel deployment API integration is not configured in Agent Hub.
 - Supabase read-only integration is not configured in Agent Hub.
 - AI Gateway may require billing verification; Offline mode remains available.
-- Runtime registry/queue are intentionally non-durable until a persistence store is connected.
+- Runtime registry/queue and event bus are intentionally non-durable until a persistence store is connected.
 
 No production database mutation is part of the automatic workflow.
 The PRINTSHOP constructor remains protected and requires explicit user request.
