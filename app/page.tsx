@@ -63,7 +63,7 @@ export default function Home() {
   };
 
   const connected = (s: string) => ints.find(i => i.service.toLowerCase().includes(s))?.configured;
-  const cp = dashboard.controlPlane || {};
+  const cp: Partial<NonNullable<Dashboard["controlPlane"]>> = dashboard.controlPlane || {};
   const stages: [string, string | undefined][] = [
     ["Monitoring", cp.monitoring], ["Security", cp.security], ["Orchestration", cp.orchestration],
     ["Repair", cp.repair], ["Verification", cp.verification], ["Production", cp.production],
