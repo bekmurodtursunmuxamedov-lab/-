@@ -113,14 +113,11 @@ export async function GET(request: Request) {
 
     const result = runTask(task.id);
     const completedTask = result?.task ?? task;
-    const finalEvent = emitEvent({
-      type: result?.ok ? "task.completed" : "task.failed",
-      agentId: incident.agentId,
-      taskId: task.id,
-      payload: { nextAction: result?.nextAction ?? "task-queued" },
-    });
     const taskPersistence = await persistTask(completedTask);
-    const eventPersistence = await persistEvent(finalEvent);
+    const lifecyclePersistence = await Promise.all(
+      (result?.events ?? []).map((event) => persistEvent(event)),
+    );
+    const lifecyclePersisted = lifecyclePersistence.some((entry) => entry.persisted);
 
     return {
       incidentId: incident.id,
@@ -128,7 +125,7 @@ export async function GET(request: Request) {
       taskId: completedTask.id,
       nextAction: result?.nextAction ?? "task-queued",
       stages: result?.stages ?? [],
-      persisted: taskPersistence.persisted || eventPersistence.persisted,
+      persisted: taskPersistence.persisted || lifecyclePersisted,
       persistenceState: taskPersistence.state,
     };
   }));
