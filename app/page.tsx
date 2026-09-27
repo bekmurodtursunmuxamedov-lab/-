@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 
 type Integration = { service: string; key: string; configured: boolean };
-type ControlPlane = { monitoring?: string; security?: string; orchestration?: string; repair?: string; verification?: string; production?: string };\ntype Dashboard = { controlPlane?: ControlPlane };
+type ControlPlane = { monitoring?: string; security?: string; orchestration?: string; repair?: string; verification?: string; production?: string };
+type Dashboard = { controlPlane?: ControlPlane };
 type Activity = { id: string; stage: string; status: string; message: string };
 type Health = { ok?: boolean; status?: number; latencyMs?: number };
 type Agent = { id: string; name: string; role: string; status: string; target: string; capabilities: string[]; protected: string[] };
