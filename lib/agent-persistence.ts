@@ -1,7 +1,8 @@
 import { getPersistenceConfig, type PersistenceConfigState } from "./persistence-config.mjs";
 import { checkPersistenceConnection } from "./agent-persistence-runtime.mjs";
 
-export type PersistenceStatus = PersistenceConfigState & {
+export type PersistenceStatus = Omit<PersistenceConfigState, "state"> & {
+  state: PersistenceConfigState["state"] | "error";
   configured: boolean;
   connected: boolean;
   reason: string;
