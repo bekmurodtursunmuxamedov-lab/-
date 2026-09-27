@@ -26,3 +26,14 @@ When a dedicated Agent Hub database is available, configure:
 - AGENT_HUB_SUPABASE_SERVER_KEY — server-side key for that dedicated project.
 
 Do not point AGENT_HUB_SUPABASE_URL at the production PRINTSHOP database. The automatic workflow never creates Agent Hub persistence tables in the PRINTSHOP production project.
+
+
+## Production promotion guard
+
+Agent Hub exposes an explicit Vercel promotion route at `/api/agent/vercel/promote`.
+
+Required request fields:
+- `deploymentId` — deployment belonging to the configured Agent Hub Vercel project.
+- `confirmProduction: true` — mandatory explicit confirmation.
+
+Without this exact confirmation, no production write is performed. The Agent Hub does not automatically promote deployments.
