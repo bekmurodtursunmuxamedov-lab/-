@@ -10,6 +10,7 @@ type Activity = { id: string; stage: string; status: string; message: string };
 type Health = { ok?: boolean; status?: number; latencyMs?: number };
 type Agent = { id: string; name: string; role: string; status: string; target: string; capabilities: string[]; protected: string[] };
 type AdapterState = { configured?: boolean; connected?: boolean; error?: string };
+type PersistenceState = { configured?: boolean; ready?: boolean; state?: string; reason?: string };
 
 export default function Home() {
   const [ints, setInts] = useState<Integration[]>([]);
@@ -23,9 +24,10 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [adapters, setAdapters] = useState<{ vercel: AdapterState | null; supabase: AdapterState | null }>({ vercel: null, supabase: null });
+  const [persistence, setPersistence] = useState<PersistenceState | null>(null);
 
   const refresh = async () => {
-    const [i, d, a, h, reg, v, s] = await Promise.all([
+    const [i, d, a, h, reg, v, s, p] = await Promise.all([
       fetch("/api/integrations").then(r => r.json()),
       fetch("/api/agent/dashboard").then(r => r.json()),
       fetch("/api/agent/activity").then(r => r.json()),
@@ -33,6 +35,7 @@ export default function Home() {
       fetch("/api/agent/registry").then(r => r.json()),
       fetch("/api/agent/vercel/status").then(r => r.json()),
       fetch("/api/agent/supabase/status").then(r => r.json()),
+      fetch("/api/agent/persistence/status").then(r => r.json()),
     ]);
     setInts(i.integrations || []);
     setDashboard(d);
@@ -40,6 +43,7 @@ export default function Home() {
     setHealth(h);
     setAgents(reg.agents || []);
     setAdapters({ vercel: v, supabase: s });
+    setPersistence(p.persistence || null);
   };
 
   useEffect(() => { refresh(); }, []);
@@ -87,6 +91,7 @@ export default function Home() {
         { name: "vercel", label: adapters.vercel ? integrationLabel(adapters.vercel) : "CHECKING...", ok: Boolean(adapters.vercel?.connected) },
         { name: "supabase", label: adapters.supabase ? integrationLabel(adapters.supabase) : "CHECKING...", ok: Boolean(adapters.supabase?.connected) },
         { name: "ai gateway", label: connected("ai gateway") ? "CONNECTED" : "NOT CONNECTED", ok: Boolean(connected("ai gateway")) },
+        { name: "agent hub store", label: persistence ? persistence.state?.toUpperCase() : "CHECKING...", ok: Boolean(persistence?.ready) },
       ].map(item => <div className="card" key={item.name}><div className="small muted">{item.name}</div><strong className={item.ok ? "ok" : "bad"}>{item.label}</strong></div>)}
     </section>
 
