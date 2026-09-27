@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAgent } from "@/lib/agent-registry-store";
 import { enqueueTask } from "@/lib/agent-task-queue";
 import { runTask } from "@/lib/agent-task-runner";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth.mjs";
 
 type Incident = {
   id: string;
@@ -16,7 +17,16 @@ type Incident = {
 
 const targets = [{ id: "printshop", name: "PRINTSHOP", url: "https://print-style-uz.vercel.app" }];
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!isAuthorizedCronRequest(request.headers.get("authorization"), process.env.CRON_SECRET)) {
+    return NextResponse.json({
+      ok: false,
+      error: "Unauthorized cron request.",
+      productionWrites: false,
+      constructorChanged: false,
+    }, { status: 401 });
+  }
+
   const checkedAt = new Date().toISOString();
   const incidents: Incident[] = [];
 
