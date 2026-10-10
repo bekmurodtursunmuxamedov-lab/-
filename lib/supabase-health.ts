@@ -8,7 +8,7 @@ export async function getSupabaseStatus() {
 
   // This check targets only the Agent Hub's own store. Never query PRINTSHOP tables.
   const response = await fetch(
-    `${url.replace(/\\/$/, "")}/rest/v1/agent_registry?select=id&limit=1`,
+    `${url.replace(/\/+$/, "")}/rest/v1/agent_registry?select=id&limit=1`,
     {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
       cache: "no-store",
