@@ -2,8 +2,6 @@ const TEAM_ID = process.env.VERCEL_TEAM_ID || "team_kgP1qPEjt8tmUprTZsDdRW0c";
 // Fixed to this Agent Hub project. Do not fall back to a different project.
 const PROJECT_ID = "prj_rHne86ZngMz39BzCFqBvs9mIcdLh";
 
-const query = TEAM_ID ? `?teamId=${encodeURIComponent(TEAM_ID)}` : "";
-
 const api = async (path: string) => {
   const token = process.env.VERCEL_TOKEN;
   if (!token) throw new Error("VERCEL_TOKEN is not configured");
@@ -16,9 +14,13 @@ const api = async (path: string) => {
 };
 
 export async function getVercelStatus() {
-  const data = await api(
-    `/v6/deployments?projectId=${encodeURIComponent(PROJECT_ID)}&limit=5${query}`,
-  );
+  const params = new URLSearchParams({
+    projectId: PROJECT_ID,
+    limit: "5",
+  });
+  if (TEAM_ID) params.set("teamId", TEAM_ID);
+
+  const data = await api(`/v6/deployments?${params.toString()}`);
   const latest = data.deployments?.[0];
   return {
     connected: true,
